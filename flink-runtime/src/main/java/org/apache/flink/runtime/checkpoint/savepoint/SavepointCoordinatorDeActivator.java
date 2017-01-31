@@ -27,6 +27,7 @@ import org.apache.flink.util.Preconditions;
 import java.util.UUID;
 
 /**
+ * 监听job的状态，专门用来停止savepoint调度器及房企其他pending的checkpoints
  * This actor listens to changes in the JobStatus and deactivates the
  * savepoint scheduler and discards all pending checkpoints.
  */

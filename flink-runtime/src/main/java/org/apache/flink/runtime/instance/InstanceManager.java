@@ -171,6 +171,9 @@ public class InstanceManager {
 
 			InstanceID instanceID = new InstanceID();
 
+
+            //这里最重要的是将taskManager actorRef设置到Instance对象中去，在每一个ExecutionVertex中可以通过slot.getInstance().getActorGateway()
+			// taskManager actorRef，用于给taskmanager发送消息，如TriggerCheckpoint消息
 			Instance host = new Instance(actorGateway, connectionInfo, resourceID, instanceID,
 				resources, numberOfSlots);
 

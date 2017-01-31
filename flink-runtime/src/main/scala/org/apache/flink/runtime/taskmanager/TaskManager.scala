@@ -294,7 +294,7 @@ class TaskManager(
     // task messages are most common and critical, we handle them first
     case message: TaskMessage => handleTaskMessage(message)
 
-    // messages for coordinating checkpoints
+    // messages for coordinating checkpoints,
     case message: AbstractCheckpointMessage => handleCheckpointingMessage(message)
 
     case JobManagerLeaderAddress(address, newLeaderSessionID) =>
@@ -546,6 +546,7 @@ class TaskManager(
   private def handleCheckpointingMessage(actorMessage: AbstractCheckpointMessage): Unit = {
 
     actorMessage match {
+        //此处是由ExecutionVertex发送过来的
       case message: TriggerCheckpoint =>
         val taskExecutionId = message.getTaskExecutionId
         val checkpointId = message.getCheckpointId
@@ -555,7 +556,7 @@ class TaskManager(
 
         val task = runningTasks.get(taskExecutionId)
         if (task != null) {
-          task.triggerCheckpointBarrier(checkpointId, timestamp)
+          task.triggerCheckpointBarrier(checkpointId, timestamp)//真正执行triggerCheckpointBarrier，触发检查点屏障Barrier
         } else {
           log.debug(s"TaskManager received a checkpoint request for unknown task $taskExecutionId.")
         }
@@ -1102,7 +1103,7 @@ class TaskManager(
    * Receives a [[TaskDeploymentDescriptor]] describing the task to be executed. It eagerly
    * acknowledges the task reception to the sender and asynchronously starts the initialization of
    * the task.
-   *
+   *这里主要根据TaskDeploymentDescriptor携带的信息构造task，task最终会启动streamTask的run方法
    * @param tdd TaskDeploymentDescriptor describing the task to be executed on this [[TaskManager]]
    */
   private def submitTask(tdd: TaskDeploymentDescriptor): Unit = {
@@ -1151,7 +1152,7 @@ class TaskManager(
         taskInformation.getTaskName,
         tdd.getSubtaskIndex,
         tdd.getAttemptNumber)
-
+         //构造task
       val task = new Task(
         jobInformation,
         taskInformation,
@@ -1186,7 +1187,7 @@ class TaskManager(
       }
 
       // all good, we kick off the task, which performs its own initialization
-      task.startTaskThread()
+      task.startTaskThread()//启动task，主要是启动线程的run方法，
 
       sender ! decorateMessage(Acknowledge)
 

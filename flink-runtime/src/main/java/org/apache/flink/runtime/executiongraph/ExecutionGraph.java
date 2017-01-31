@@ -402,6 +402,7 @@ public class ExecutionGraph implements Serializable {
 		// interval of max long value indicates disable periodic checkpoint,
 		// the CheckpoitnCoordinator should be created only if the interval is not max value
 		if (interval != Long.MAX_VALUE) {
+			//为该job构建CheckpointCoordinator
 			// create the coordinator that triggers and commits checkpoints and holds the state
 			checkpointCoordinator = new CheckpointCoordinator(
 			jobInformation.getJobId(),
@@ -419,6 +420,9 @@ public class ExecutionGraph implements Serializable {
 			recoveryMode,
 			checkpointStatsTracker,
 			ioExecutor);
+
+			//为该job的CheckpointCoordinator的jobStatusListener注册一个CheckpointCoordinatorDeActivator actorRef，
+			// 最终根据job是否处于running状态来启停周期定时cp调度器
 
 			// the periodic checkpoint scheduler is activated and deactivated as a result of
 			// job status changes (running -> on, all other states -> off)
@@ -443,6 +447,7 @@ public class ExecutionGraph implements Serializable {
 			checkpointStatsTracker,
 			ioExecutor);
 
+        //为savepointCoordinator的jobStatusListener注册一个SavepointCoordinatorDeActivator actorRef专门用来停止checkpoint的调度器
 		registerJobStatusListener(savepointCoordinator
 			.createActivatorDeactivator(actorSystem, leaderSessionID));
 	}

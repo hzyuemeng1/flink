@@ -25,6 +25,7 @@ import org.apache.flink.runtime.executiongraph.ExecutionAttemptID;
  * This message is sent from the {@link org.apache.flink.runtime.jobmanager.JobManager} to the
  * {@link org.apache.flink.runtime.taskmanager.TaskManager} to tell a certain task to trigger its
  * checkpoint.
+ * JobManager发送此消息给TaskManager去触发该TaskManager上面的一个确定的task的checkpoint
  */
 public class TriggerCheckpoint extends AbstractCheckpointMessage implements java.io.Serializable {
 

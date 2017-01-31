@@ -262,7 +262,9 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 				throw new CancelTaskException();
 			}
 
-			// let the task do its work
+			// let the task do its work，真正执行的代码，run这里无实现，实际执行其子类的方法，
+			//这里只分析其子类OneInputStreamTask的run方法实现，这里说下每一个StreamTransformation的继承类一般会对应一个具体的
+			//StreamTask的子类
 			isRunning = true;
 			run();
 
@@ -649,6 +651,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 					if (operator != null) {
 						StreamTaskState state;
 						try {
+							//进行快照的最终还是要调用StreamOperator的snapshotOperatorState进行快照的
 							state = operator.snapshotOperatorState(checkpointId, timestamp);
 						} catch (Exception exception) {
 							for (int j = 0; j < i; j++) {

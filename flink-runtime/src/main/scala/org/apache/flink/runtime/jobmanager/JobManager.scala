@@ -1073,6 +1073,7 @@ class JobManager(
    * @param jobGraph representing the Flink job
    * @param jobInfo the job info
    * @param isRecovery Flag indicating whether this is a recovery or initial submission
+    * 这里最主要的就是构造ExecutionGraph对象，同时初始化ExecutionGraph对象中关于快照的数据结构和服务，主要为快照协调器及actorRef
    */
   private def submitJob(
       jobGraph: JobGraph,
@@ -1270,6 +1271,9 @@ class JobManager(
             jobParallelism
           }
 
+
+          //job的executionGraph设置快照所需要的数据结构及启动必须要的actor，这里主要是checkpointcoordinator及savepointcoordinator对象
+          //每个coordinator对象都会含有一个actorRef用来控制启停checkpoint的周期调度器
           executionGraph.enableSnapshotCheckpointing(
             snapshotSettings.getCheckpointInterval,
             snapshotSettings.getCheckpointTimeout,
@@ -1452,7 +1456,7 @@ class JobManager(
         }
 
       case declineMessage: DeclineCheckpoint =>
-        val jid = declineMessage.getJob()
+        val jid = declineMessage.getJob()//首先获取jobID
         currentJobs.get(jid) match {
           case Some((graph, _)) =>
             val checkpointCoordinator = graph.getCheckpointCoordinator()
@@ -1460,7 +1464,7 @@ class JobManager(
 
             if (checkpointCoordinator != null || savepointCoordinator != null) {
               future {
-                try {
+                try {//这里主要调用checkpointCoordinator的receiveDeclineMessage方法来处理DeclineMessage
                   if (checkpointCoordinator != null &&
                     checkpointCoordinator.receiveDeclineMessage(declineMessage)) {
                     // OK, this is the common case

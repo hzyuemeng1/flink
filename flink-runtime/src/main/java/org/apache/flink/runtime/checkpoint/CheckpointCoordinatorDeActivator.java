@@ -25,7 +25,7 @@ import org.apache.flink.util.Preconditions;
 
 import java.util.UUID;
 
-/**
+/**监听job状态的变化，用来启动或者停止checkponit调度器
  * This actor listens to changes in the JobStatus and activates or deactivates the periodic
  * checkpoint scheduler.
  */

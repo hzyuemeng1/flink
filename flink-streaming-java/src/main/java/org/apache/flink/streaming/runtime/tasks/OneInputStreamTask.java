@@ -60,6 +60,9 @@ public class OneInputStreamTask<IN, OUT> extends StreamTask<OUT, OneInputStreamO
 	@Override
 	protected void run() throws Exception {
 		// cache some references on the stack, to make the code more JIT friendly
+		//首先还是获取该transform里面的StreamOperator，然后最终调用streamOperator.processElement(record)处理数据
+		//如果该OneInputStreamOperator为StreamMap,则最终会执行StreamMap的 userFunction.map(element.getValue())
+		//进行记录数据处理
 		final OneInputStreamOperator<IN, OUT> operator = this.headOperator;
 		final StreamInputProcessor<IN> inputProcessor = this.inputProcessor;
 		final Object lock = getCheckpointLock();

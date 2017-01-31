@@ -557,6 +557,7 @@ public class CheckpointCoordinator {
 				timer.schedule(canceller, checkpointTimeout);
 			}
 			// end of lock scope
+			//发送TriggerCheckpoint消息给task触发checkpoint
 
 			// send the messages to the tasks that trigger their checkpoint
 			for (int i = 0; i < tasksToTrigger.length; i++) {
@@ -601,7 +602,7 @@ public class CheckpointCoordinator {
 			return false;
 		}
 
-		final long checkpointId = message.getCheckpointId();
+		final long checkpointId = message.getCheckpointId();//获取checkpoint id
 		final String reason = (message.getReason() != null ? message.getReason().getMessage() : "");
 
 		PendingCheckpoint checkpoint;
@@ -618,35 +619,40 @@ public class CheckpointCoordinator {
 			}
 
 			checkpoint = pendingCheckpoints.get(checkpointId);
+			//如果从pendingCheckpoints能够获取该checkpointID对应的checkpoint
+			//证明本次消息就是对应pendingCheckpoint的，设置isPendingCheckpoint为true
 
 			if (checkpoint != null && !checkpoint.isDiscarded()) {
 				isPendingCheckpoint = true;
+				//打印该消息产生的原因
 
 				LOG.info("Discarding checkpoint {} because of checkpoint decline from task {} : {}",
 						checkpointId, message.getTaskExecutionId(), reason);
 
-				pendingCheckpoints.remove(checkpointId);
-				checkpoint.discard(userClassLoader);
-				rememberRecentCheckpointId(checkpointId);
+				pendingCheckpoints.remove(checkpointId);//pendingCheckpoints中移除本次checkpoint
+				checkpoint.discard(userClassLoader);//丢弃该checkpoint关联的resource
+				rememberRecentCheckpointId(checkpointId);//recentPendingCheckpoints队列中设置最新的checkpointID为当前checkpoint ID
 
-				onCancelCheckpoint(checkpointId);
+				onCancelCheckpoint(checkpointId);//通知savepoint coordinator移除本次checkpoint
 
 				boolean haveMoreRecentPending = false;
+				//如果pendingCheckpoints中存在checkpoint id 大于本次的checkpoint ID，则表明仍然有更多处于pending状态的checkpoint
 				for (PendingCheckpoint p : pendingCheckpoints.values()) {
 					if (!p.isDiscarded() && p.getCheckpointId() >= checkpoint.getCheckpointId()) {
-						haveMoreRecentPending = true;
+						haveMoreRecentPending = true; //pendingCheckpoints存在大于本次checkpointID的checkpoint
 						break;
 					}
 				}
 
 				if (!haveMoreRecentPending) {
-					triggerQueuedRequests();
+					triggerQueuedRequests();//如果没有haveMoreRecentPending，则立即触发下一个checkpoint
 				}
-			} else if (checkpoint != null) {
+			} else if (checkpoint != null) {//如果是未完成的检查点，并且检查点已经被discarded
 				// this should not happen
 				throw new IllegalStateException(
 					"Received message for discarded but non-removed checkpoint " + checkpointId);
 			} else {
+				//如果在最近未完成的检查点列表中找到，则有可能表示消息来迟了，将isPendingCheckpoint置为true，否则将isPendingCheckpoint置为false
 				// message is for an unknown checkpoint, or comes too late (checkpoint disposed)
 				if (recentPendingCheckpoints.contains(checkpointId)) {
 					isPendingCheckpoint = true;
@@ -877,7 +883,7 @@ public class CheckpointCoordinator {
 				if (currentPeriodicTrigger != null) {
 					currentPeriodicTrigger.cancel();
 				}
-				currentPeriodicTrigger = trigger;
+				currentPeriodicTrigger = trigger;//立即触发下一个定时checkpoint，主要是启动ScheduledTriggerrun方法中triggerCheckpoint(System.currentTimeMillis())
 				timer.scheduleAtFixedRate(trigger, 0L, baseInterval);
 			}
 			else {
@@ -1090,6 +1096,7 @@ public class CheckpointCoordinator {
 			}
 
 			if (jobStatusListener == null) {
+				//这里构造CheckpointCoordinatorDeActivator actorRef,通过向该actorRef发送JobStatusChanged消息来启停定时cp调度器
 				Props props = Props.create(CheckpointCoordinatorDeActivator.class, this, leaderSessionID);
 
 				// wrap the ActorRef in a AkkaActorGateway to support message decoration

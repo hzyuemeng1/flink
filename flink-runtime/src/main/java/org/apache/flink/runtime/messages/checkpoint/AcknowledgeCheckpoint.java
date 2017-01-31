@@ -27,7 +27,7 @@ import org.apache.flink.util.SerializedValue;
  * This message is sent from the {@link org.apache.flink.runtime.taskmanager.TaskManager} to the
  * {@link org.apache.flink.runtime.jobmanager.JobManager} to signal that the checkpoint of an
  * individual task is completed.
- * 
+ * TaskManager发送此消息给JobManager标志单独task的checkpoint已经完成，可能携带task的状态
  * This message may carry the handle to the task's state.
  */
 public class AcknowledgeCheckpoint extends AbstractCheckpointMessage implements java.io.Serializable {

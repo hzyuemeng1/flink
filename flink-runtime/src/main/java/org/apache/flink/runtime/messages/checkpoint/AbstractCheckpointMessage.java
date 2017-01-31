@@ -31,7 +31,8 @@ public abstract class AbstractCheckpointMessage implements java.io.Serializable 
 	/** The job to which this message belongs */
 	private final JobID job;
 	
-	/** The task execution that is source/target of the checkpoint message */  
+	/** The task execution that is source/target of the checkpoint message */
+	//ExecutionAttemptID的实例，表示检查点的源/目的任务
 	private final ExecutionAttemptID taskExecutionId;
 	
 	/** The ID of the checkpoint that this message coordinates */

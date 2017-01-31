@@ -217,6 +217,7 @@ public class Task implements Runnable {
 	private final AtomicBoolean invokableHasBeenCanceled;
 
 	/** The invokable of this task, if initialized */
+	//所有的streamTask都是继承AbstractInvokable，这里task启动的时候就是调用invokable.invoke方法间接
 	private volatile AbstractInvokable invokable;
 
 	/** The current execution state of the task */
@@ -395,10 +396,12 @@ public class Task implements Runnable {
 		return this.taskConfiguration;
 	}
 
+	//往下游写数据接口
 	public ResultPartitionWriter[] getAllWriters() {
 		return writers;
 	}
 
+	//从上游读数据接口
 	public SingleInputGate[] getAllInputGates() {
 		return inputGates;
 	}
@@ -465,7 +468,7 @@ public class Task implements Runnable {
 	 * Starts the task's thread.
 	 */
 	public void startTaskThread() {
-		executingThread.start();
+		executingThread.start();//executingThread run方法里面会直接调用this.run启动线程
 	}
 
 	/**
@@ -532,6 +535,7 @@ public class Task implements Runnable {
 			}
 
 			// now load the task's invokable code
+			//** 简单理解为加载具体在jvm执行的task代码，一些该task任务对应的java class,
 			invokable = loadAndInstantiateInvokable(userCodeClassLoader, nameOfInvokableClass);
 
 			if (isCanceledOrFailed()) {
@@ -638,7 +642,8 @@ public class Task implements Runnable {
 			// make sure the user code classloader is accessible thread-locally
 			executingThread.setContextClassLoader(userCodeClassLoader);
 
-			// run the invokable
+			// run the invokable,执行具体task字节码，真正执行task进行处理，这里如果是stream计算则，则invokable为StreamTask的及其子类，执行顺序为
+			// StreamTask的invoke，invoke执行run方法，真正执行的是StreamTask真正子类的run方法，
 			invokable.invoke();
 
 			// make sure, we enter the catch block if the task leaves the invoke() method due
@@ -1024,15 +1029,15 @@ public class Task implements Runnable {
 	/**
 	 * Calls the invokable to trigger a checkpoint, if the invokable implements the interface
 	 * {@link org.apache.flink.runtime.jobgraph.tasks.StatefulTask}.
-	 * 
+	 * 无法触发checkpoint，task不是stateful，以及task没在运行都会向JobManager发送DeclineCheckpoint消息
 	 * @param checkpointID The ID identifying the checkpoint.
 	 * @param checkpointTimestamp The timestamp associated with the checkpoint.
 	 */
 	public void triggerCheckpointBarrier(final long checkpointID, final long checkpointTimestamp) {
-		AbstractInvokable invokable = this.invokable;
+		AbstractInvokable invokable =  this.invokable;
 
 		if (executionState == ExecutionState.RUNNING && invokable != null) {
-			if (invokable instanceof StatefulTask) {
+			if (invokable instanceof StatefulTask) { //由状态的task才能执行checkpoint
 
 				// build a local closure
 				final StatefulTask<?> statefulTask = (StatefulTask<?>) invokable;
@@ -1042,8 +1047,10 @@ public class Task implements Runnable {
 					@Override
 					public void run() {
 						try {
+							//触发执行triggerCheckpoint，这里如果是stream的话则调用StreamTask的triggerCheckpoint方法
 							boolean success = statefulTask.triggerCheckpoint(checkpointID, checkpointTimestamp);
 							if (!success) {
+								//如果没有成功则标记该checkpoint为DeclineCheckpoint，并告诉给JobManager
 								// task was not ready to trigger this checkpoint
 								DeclineCheckpoint decline = new DeclineCheckpoint(
 										jobId, getExecutionId(), checkpointID,
