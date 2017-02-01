@@ -186,10 +186,10 @@ public abstract class AbstractUdfStreamOperator<OUT, F extends Function> extends
 
 	@Override
 	public void notifyOfCompletedCheckpoint(long checkpointId) throws Exception {
-		super.notifyOfCompletedCheckpoint(checkpointId);
+		super.notifyOfCompletedCheckpoint(checkpointId);//交给父类默认的state backend去处理CompletedCheckpoint后的动作，如存储到其他地方
 
 		if (userFunction instanceof CheckpointListener) {
-			((CheckpointListener) userFunction).notifyCheckpointComplete(checkpointId);
+			((CheckpointListener) userFunction).notifyCheckpointComplete(checkpointId);//由userFunction（继承自CheckpointListener）去处理，
 		}
 	}
 

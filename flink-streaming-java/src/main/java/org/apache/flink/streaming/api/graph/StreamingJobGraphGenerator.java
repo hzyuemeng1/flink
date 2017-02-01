@@ -294,7 +294,7 @@ public class StreamingJobGraphGenerator {
 			LOG.debug("Parallelism set: {} for {}", parallelism, streamNodeId);
 		}
 
-		jobVertices.put(streamNodeId, jobVertex);
+		jobVertices.put(streamNodeId, jobVertex);//每一个jobVertex都会以streamNodeID -> jobVertex放到jobVertices，这个map后面多个地方会用到
 		builtVertices.add(streamNodeId);
 		jobGraph.addVertex(jobVertex);
 
@@ -458,25 +458,28 @@ public class StreamingJobGraphGenerator {
 
 		// collect the vertices that receive "trigger checkpoint" messages.
 		// currently, these are all the sources
-		List<JobVertexID> triggerVertices = new ArrayList<>();
+		List<JobVertexID> triggerVertices = new ArrayList<>();//只有source端JobVertex对应task接受trigger checkpoint messages
 
 		// collect the vertices that need to acknowledge the checkpoint
 		// currently, these are all vertices
-		List<JobVertexID> ackVertices = new ArrayList<>(jobVertices.size());
+		List<JobVertexID> ackVertices = new ArrayList<>(jobVertices.size());//所有JobVertex对应的task都接受acknowledge checkpoint message
 
 		// collect the vertices that receive "commit checkpoint" messages
 		// currently, these are all vertices
-		List<JobVertexID> commitVertices = new ArrayList<>();
+		List<JobVertexID> commitVertices = new ArrayList<>();//所有JobVertex对应的task都接受commit checkpoint message
 
 		for (JobVertex vertex : jobVertices.values()) {
 			if (vertex.isInputVertex()) {
 				triggerVertices.add(vertex.getID());
 			}
 			// TODO: add check whether the user function implements the checkpointing interface
-			commitVertices.add(vertex.getID());
+			commitVertices.add(vertex.getID());//
 			ackVertices.add(vertex.getID());
 		}
 
+		//triggerVertices, ackVertices, commitVertices都会设置到JobSnapshottingSettings，最终在checkpoint coordinator里面使用到
+		//转化为tasksToTrigger，tasksToWaitFor，tasksToCommitTo集合
+		//triggerVertices, ackVertices, commitVertices这三个都在JobManager里面的submitJob被转化为val triggerVertices: java.util.List[ExecutionJobVertex]等
 		JobSnapshottingSettings settings = new JobSnapshottingSettings(
 				triggerVertices, ackVertices, commitVertices, interval,
 				cfg.getCheckpointTimeout(), cfg.getMinPauseBetweenCheckpoints(),

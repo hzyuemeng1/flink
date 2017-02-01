@@ -54,12 +54,14 @@ public class PendingCheckpoint {
 	private final long checkpointId;
 	
 	private final long checkpointTimestamp;
+	//jobVertexID对应的taskState，其实就是jobgraph层，每个task对应的taskState
 
 	private final Map<JobVertexID, TaskState> taskStates;
 
+	//存放那些还没有被task ack的ExecutionVertex，其实就是存放那些task还没完成ack
 	private final Map<ExecutionAttemptID, ExecutionVertex> notYetAcknowledgedTasks;
 	
-	/** Set of acknowledged tasks */
+	/** Set of acknowledged tasks 标记那些task已经被ack过 */
 	private final Set<ExecutionAttemptID> acknowledgedTasks;
 
 	private final Executor executor;
@@ -160,11 +162,11 @@ public class PendingCheckpoint {
 
 			if (vertex == null) {
 				if (acknowledgedTasks.contains(executionAttemptId)) {
-					return TaskAcknowledgeResult.DUPLICATE;
+					return TaskAcknowledgeResult.DUPLICATE;//acknowledgedTasks中存在则标记为重复，其他则为unkown
 				} else {
 					return TaskAcknowledgeResult.UNKNOWN;
 				}
-			} else {
+			} else {//ExecutionVertex确实没有被ack过，则添加到该task到acknowledgedTasks
 				acknowledgedTasks.add(executionAttemptId);
 			}
 
@@ -174,6 +176,7 @@ public class PendingCheckpoint {
 
 				TaskState taskState;
 
+				//taskStates包含此task，则从map中获取，不包含则以该jobVertexID，及并行task个数构成taskstate塞进map中去
 				if (taskStates.containsKey(jobVertexID)) {
 					taskState = taskStates.get(jobVertexID);
 				} else {
@@ -183,7 +186,7 @@ public class PendingCheckpoint {
 
 				long timestamp = System.currentTimeMillis() - checkpointTimestamp;
 
-				if (state != null) {
+				if (state != null) {//保存subTask的state
 					taskState.putState(
 						vertex.getParallelSubtaskIndex(),
 						new SubtaskState(
@@ -208,7 +211,7 @@ public class PendingCheckpoint {
 				}
 			}
 			numAcknowledgedTasks++;
-			return TaskAcknowledgeResult.SUCCESS;
+			return TaskAcknowledgeResult.SUCCESS;//返回task ack为true
 		}
 	}
 

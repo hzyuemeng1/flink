@@ -638,6 +638,8 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 				// lock scope, they are an atomic operation regardless of the order in which they occur.
 				// Given this, we immediately emit the checkpoint barriers, so the downstream operators
 				// can start their checkpoint work as soon as possible
+				//在一个task中可能存在多个operator级联在一块，这个操作的目的就是发送当前checkpoint点对应的CheckpointBarrier(id, timestamp)到
+				//其他的operator中去取触发下游的operator尽快执行checkpoint的
 				operatorChain.broadcastCheckpointBarrier(checkpointId, timestamp);
 				
 				// now draw the state snapshot
@@ -657,7 +659,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 							for (int j = 0; j < i; j++) {
 								if (states[j] != null) {
 									try {
-										states[j].discardState();
+										states[j].discardState();//一旦失败，discard state
 									} catch (Exception discardException) {
 										LOG.warn("Could not discard {}th operator state of " +
 											"checkpoint {} for operator {}.", j, checkpointId,
@@ -696,11 +698,11 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 
 				StreamTaskStateList allStates = new StreamTaskStateList(states);
 
-				if (allStates.isEmpty()) {
+				if (allStates.isEmpty()) {//task已经完成checkpoint，但是checkpoint中不包含任何state
 					getEnvironment().acknowledgeCheckpoint(checkpointId);
 				} else if (!hasAsyncStates) {
 					try {
-						this.lastCheckpointSize = allStates.getStateSize();
+						this.lastCheckpointSize = allStates.getStateSize();//如果不是异步checkpoint，则task中的lastCheckpointSize大小为allStates.getStateSize()
 					} catch (Exception ioE) {
 						LOG.warn("Could not calculate the total state size for checkpoint {}.", checkpointId, ioE);
 					}
@@ -709,12 +711,13 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 				} else {
 					// start a Thread that does the asynchronous materialization and
 					// then sends the checkpoint acknowledge
+					//创建单独的线程，物化states，同时向JobManager发送ack
 					String threadName = "Materialize checkpoint state " + checkpointId + " - " + getName();
 					AsyncCheckpointThread checkpointThread = new AsyncCheckpointThread(
 							threadName, this, cancelables, states, checkpointId);
 
 					synchronized (cancelables) {
-						cancelables.add(checkpointThread);
+						cancelables.add(checkpointThread);//物化线程加入到回调集合，用于取消物化，个人理解
 					}
 					checkpointThread.start();
 				}
@@ -759,7 +762,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 				
 				for (StreamOperator<?> operator : operatorChain.getAllOperators()) {
 					if (operator != null) {
-						operator.notifyOfCompletedCheckpoint(checkpointId);
+						operator.notifyOfCompletedCheckpoint(checkpointId);//具体的streamOperator去做CompletedCheckpoint相关的操作
 					}
 				}
 			}
@@ -938,7 +941,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 							}
 							if (state.getOperatorState() instanceof AsynchronousStateHandle) {
 								AsynchronousStateHandle<?> asyncState = (AsynchronousStateHandle<?>) state.getOperatorState();
-								state.setOperatorState(asyncState.materialize());
+								state.setOperatorState(asyncState.materialize());//materialize()无实现，这里感觉多余取出又重新设置进去？
 							}
 							if (state.getKvStates() != null) {
 								Set<String> keys = state.getKvStates().keySet();
@@ -970,7 +973,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 
 				StreamTaskStateList allStates = new StreamTaskStateList(states);
 				owner.lastCheckpointSize = allStates.getStateSize();
-				owner.getEnvironment().acknowledgeCheckpoint(checkpointId, allStates);
+				owner.getEnvironment().acknowledgeCheckpoint(checkpointId, allStates);//向JobManager发送ack，这里的ack信息除了checkpointID，还有task的状态
 
 				LOG.debug("Finished asynchronous checkpoints for checkpoint {} on task {}", checkpointId, getName());
 			}

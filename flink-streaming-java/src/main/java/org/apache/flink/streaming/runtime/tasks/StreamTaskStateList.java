@@ -28,6 +28,7 @@ import java.util.HashMap;
 
 /**
  * List of task states for a chain of streaming tasks.
+ * 管理一个task中级联在一起的所有operator快照状态
  */
 @Internal
 public class StreamTaskStateList implements StateHandle<StreamTaskState[]> {
@@ -63,7 +64,7 @@ public class StreamTaskStateList implements StateHandle<StreamTaskState[]> {
 			}
 		}
 	}
-
+    //获取task中级联的所有operator的三种状态operatorState，functionState，kvStates字节之和
 	@Override
 	public long getStateSize() throws Exception {
 		long sumStateSize = 0;

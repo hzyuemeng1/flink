@@ -560,7 +560,7 @@ class TaskManager(
         } else {
           log.debug(s"TaskManager received a checkpoint request for unknown task $taskExecutionId.")
         }
-
+        //在ExecutionVertext中调用slot.getInstance.getActorGateway获取的actor ref，然后发送到这里的
       case message: NotifyCheckpointComplete =>
         val taskExecutionId = message.getTaskExecutionId
         val checkpointId = message.getCheckpointId
@@ -570,7 +570,7 @@ class TaskManager(
 
         val task = runningTasks.get(taskExecutionId)
         if (task != null) {
-          task.notifyCheckpointComplete(checkpointId)
+          task.notifyCheckpointComplete(checkpointId)//通知具体的task，checkpoint已经完成
         } else {
           log.debug(
             s"TaskManager received a checkpoint confirmation for unknown task $taskExecutionId.")

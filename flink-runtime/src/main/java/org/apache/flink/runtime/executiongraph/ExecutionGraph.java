@@ -392,7 +392,7 @@ public class ExecutionGraph implements Serializable {
 
 		ExecutionVertex[] tasksToTrigger = collectExecutionVertices(verticesToTrigger);
 		ExecutionVertex[] tasksToWaitFor = collectExecutionVertices(verticesToWaitFor);
-		ExecutionVertex[] tasksToCommitTo = collectExecutionVertices(verticesToCommitTo);
+		ExecutionVertex[] tasksToCommitTo = collectExecutionVertices(verticesToCommitTo);//那些ExecutionVertex需要commit checkpoint的
 
 		// disable to make sure existing checkpoint coordinators are cleared
 		disableSnaphotCheckpointing();

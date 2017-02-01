@@ -1108,7 +1108,7 @@ public class Task implements Runnable {
 					@Override
 					public void run() {
 						try {
-							statefulTask.notifyCheckpointComplete(checkpointID);
+							statefulTask.notifyCheckpointComplete(checkpointID);//有具体的streamTask执行
 						}
 						catch (Throwable t) {
 							if (getExecutionState() == ExecutionState.RUNNING) {

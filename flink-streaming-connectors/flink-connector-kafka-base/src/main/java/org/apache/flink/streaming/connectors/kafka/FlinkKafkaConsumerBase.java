@@ -237,7 +237,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 			}
 			
 			// (3) run the fetcher' main work method
-			fetcher.runFetchLoop();
+			fetcher.runFetchLoop();//从kafka里面topic读数据数据，
 		}
 		else {
 			// this source never completes, so emit a Long.MAX_VALUE watermark
@@ -336,6 +336,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 			return;
 		}
 
+		//获取kafka broker的连接器
 		final AbstractFetcher<?, ?> fetcher = this.kafkaFetcher;
 		if (fetcher == null) {
 			LOG.debug("notifyCheckpointComplete() called on uninitialized source");
@@ -367,7 +368,7 @@ public abstract class FlinkKafkaConsumerBase<T> extends RichParallelSourceFuncti
 				LOG.debug("Checkpoint state was empty.");
 				return;
 			}
-			fetcher.commitSpecificOffsetsToKafka(checkpointOffsets);
+			fetcher.commitSpecificOffsetsToKafka(checkpointOffsets);//提交本次处理的kafka topic 每一个partition的offsets
 		}
 		catch (Exception e) {
 			if (running) {

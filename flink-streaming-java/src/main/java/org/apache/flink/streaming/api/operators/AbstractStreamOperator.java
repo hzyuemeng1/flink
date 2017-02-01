@@ -211,7 +211,7 @@ public abstract class AbstractStreamOperator<OUT>
 	@Override
 	public void notifyOfCompletedCheckpoint(long checkpointId) throws Exception {
 		if (stateBackend != null) {
-			stateBackend.notifyOfCompletedCheckpoint(checkpointId);
+			stateBackend.notifyOfCompletedCheckpoint(checkpointId);//由statebackend去做CompletedCheckpoint后的动作
 		}
 	}
 
