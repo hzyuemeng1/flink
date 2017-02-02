@@ -1223,6 +1223,7 @@ class JobManager(
         if (snapshotSettings != null) {
           val jobId = jobGraph.getJobID()
 
+          //根据JobVertexID -> ExecutionJobVertex
           val idToVertex: JobVertexID => ExecutionJobVertex = id => {
             val vertex = executionGraph.getJobVertex(id)
             if (vertex == null) {
@@ -1231,6 +1232,8 @@ class JobManager(
             }
             vertex
           }
+
+          //从JobSnapShotSetting里面获取到那些JobVertex需要作为triggerVertices，那些需要作为ackVertices，那些需要作为confirmVertices
 
           val triggerVertices: java.util.List[ExecutionJobVertex] =
             snapshotSettings.getVerticesToTrigger().asScala.map(idToVertex).asJava
@@ -1282,7 +1285,7 @@ class JobManager(
             parallelism,
             triggerVertices,
             ackVertices,
-            confirmVertices,
+            confirmVertices,//需要接收confirm的ExecutionVertex,其实就是task了，这些信息会在ableSnapshotCheckpointing中被用来构造checkpoint coordinator的tasksToCommitTo
             context.system,
             leaderSessionID.orNull,
             checkpointIdCounter,

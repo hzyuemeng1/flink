@@ -687,7 +687,7 @@ public class CheckpointCoordinator {
 			return false;
 		}
 
-		final long checkpointId = message.getCheckpointId();
+		final long checkpointId = message.getCheckpointId();//获取checkpoint ID
 
 		synchronized (lock) {
 			// we need to check inside the lock for being shutdown as well, otherwise we
@@ -696,13 +696,15 @@ public class CheckpointCoordinator {
 				return false;
 			}
 
-			final PendingCheckpoint checkpoint = pendingCheckpoints.get(checkpointId);
+			final PendingCheckpoint checkpoint = pendingCheckpoints.get(checkpointId);//确认是否是pending的checkpoint，所有的checkpoint都会首先加入到pendingCheckpoints
+
+			//是pending checkpoint且没有被discard
 
 			if (checkpoint != null && !checkpoint.isDiscarded()) {
 
 				switch (checkpoint.acknowledgeTask(message.getTaskExecutionId(), message.getState(), message.getStateSize(), null)) {
 					case SUCCESS:
-						if (checkpoint.isFullyAcknowledged()) {
+						if (checkpoint.isFullyAcknowledged()) {//checkpoint被task acked
 							completePendingCheckpoint(checkpoint);
 							
 						}
@@ -760,6 +762,7 @@ public class CheckpointCoordinator {
 
 	/**
 	 * Try to complete the given pending checkpoint.
+	 * 完成本次的pending checkpoint
 	 *
 	 * Important: This method should only be called in the checkpoint lock scope.
 	 *
@@ -776,12 +779,12 @@ public class CheckpointCoordinator {
 		try {
 			completedCheckpoint = pendingCheckpoint.finalizeCheckpoint();			
 
-			completedCheckpointStore.addCheckpoint(completedCheckpoint);
+			completedCheckpointStore.addCheckpoint(completedCheckpoint);//塞进completedCheckpointStore
 
-			rememberRecentCheckpointId(checkpointId);
-			dropSubsumedCheckpoints(completedCheckpoint.getTimestamp());
+			rememberRecentCheckpointId(checkpointId);//标记此次checkpoint Id为最近的checkpoint
+			dropSubsumedCheckpoints(completedCheckpoint.getTimestamp());//回收这个checkpoint以前的checkpoint 信息，
 
-			onFullyAcknowledgedCheckpoint(completedCheckpoint);
+			onFullyAcknowledgedCheckpoint(completedCheckpoint);//savepoint remove(checkpoint.getCheckpointID())
 		} catch (Exception exception) {
 			// abort the current pending checkpoint if it has not been discarded yet
 			if (!pendingCheckpoint.isDiscarded()) {
@@ -806,12 +809,12 @@ public class CheckpointCoordinator {
 
 			throw new CheckpointException("Could not complete the pending checkpoint " + checkpointId + '.', exception);
 		} finally {
-			pendingCheckpoints.remove(checkpointId);
+			pendingCheckpoints.remove(checkpointId);//最后从pendingCheckpoints移除这个checkpoint
 
-			triggerQueuedRequests();
+			triggerQueuedRequests();//触发下一个定时checkpoint
 		}
 		
-		lastCheckpointCompletionNanos = System.nanoTime();
+		lastCheckpointCompletionNanos = System.nanoTime();//最后一次checkpoint完成的时间为当前时间
 
 		LOG.info("Completed checkpoint {} (in {} ms).", checkpointId, completedCheckpoint.getDuration());
 
@@ -831,15 +834,16 @@ public class CheckpointCoordinator {
 		final long timestamp = completedCheckpoint.getTimestamp();
 
 		for (ExecutionVertex ev : tasksToCommitTo) {
-			Execution ee = ev.getCurrentExecutionAttempt();
+			Execution ee = ev.getCurrentExecutionAttempt();//如果tasksToCommitTo里面有Current ExecutionAttempt()，即当前task的checkpoint已经ack过上尚未commit
 			if (ee != null) {
 					ExecutionAttemptID attemptId = ee.getAttemptId();
+				    //以checkpointID，ExecutionAttemptID，timestamp构造NotifyCheckpointComplete消息由ev路由给TaskManager
 					NotifyCheckpointComplete notifyMessage = new NotifyCheckpointComplete(job, attemptId, checkpointId, timestamp);
 					ev.sendMessageToCurrentExecution(notifyMessage, ee.getAttemptId());
 			}
 		}
 
-		statsTracker.onCompletedCheckpoint(completedCheckpoint);
+		statsTracker.onCompletedCheckpoint(completedCheckpoint);//statsTracker标记此次checkpoint已经complete
 	}
 
 	private void rememberRecentCheckpointId(long id) {
@@ -854,7 +858,7 @@ public class CheckpointCoordinator {
 		while (entries.hasNext()) {
 			PendingCheckpoint p = entries.next().getValue();
 			if (p.getCheckpointTimestamp() < timestamp) {
-				rememberRecentCheckpointId(p.getCheckpointId());
+				rememberRecentCheckpointId(p.getCheckpointId());//这里是不是有问题，最新的一次不是应该还是timestamp对应的？？
 
 				p.discard(userClassLoader);
 

@@ -245,13 +245,13 @@ public class RuntimeEnvironment implements Environment {
 			stateSize = 0;
 		} else {
 			try {
-				serializedState = new SerializedValue<StateHandle<?>>(state);
+				serializedState = new SerializedValue<StateHandle<?>>(state);//序列states，以便发送给JobManager
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to serialize state handle during checkpoint confirmation", e);
 			}
 
 			try {
-				stateSize = state.getStateSize();
+				stateSize = state.getStateSize();//这里将stateSize及serializedState构成的ack消息发送给JobManager，是不是为做states的checksum？
 			}
 			catch (Exception e) {
 				throw new RuntimeException("Failed to fetch state handle size", e);

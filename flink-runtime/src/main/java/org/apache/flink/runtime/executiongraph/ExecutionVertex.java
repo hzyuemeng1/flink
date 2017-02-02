@@ -510,7 +510,7 @@ public class ExecutionVertex implements Serializable {
 			
 			// send only if we actually have a target
 			if (slot != null) {
-				ActorGateway gateway = slot.getInstance().getActorGateway();
+				ActorGateway gateway = slot.getInstance().getActorGateway();//其实获取的是TaskManager的actor ref，前面有介绍
 				if (gateway != null) {
 					if (sender == null) {
 						gateway.tell(message);
