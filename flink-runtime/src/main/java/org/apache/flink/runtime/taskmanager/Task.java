@@ -535,7 +535,7 @@ public class Task implements Runnable {
 			}
 
 			// now load the task's invokable code
-			//** 简单理解为加载具体在jvm执行的task代码，一些该task任务对应的java class,
+			//** 简单理解为加载具体在jvm执行的task代码，一些该task任务对应的java class,就是streamTask对象
 			invokable = loadAndInstantiateInvokable(userCodeClassLoader, nameOfInvokableClass);
 
 			if (isCanceledOrFailed()) {
@@ -1029,9 +1029,10 @@ public class Task implements Runnable {
 	/**
 	 * Calls the invokable to trigger a checkpoint, if the invokable implements the interface
 	 * {@link org.apache.flink.runtime.jobgraph.tasks.StatefulTask}.
-	 * 无法触发checkpoint，task不是stateful，以及task没在运行都会向JobManager发送DeclineCheckpoint消息
+	 * 无法触发checkpoint，task不是stateful，以及task没在运行，都会向JobManager发送DeclineCheckpoint消息
 	 * @param checkpointID The ID identifying the checkpoint.
 	 * @param checkpointTimestamp The timestamp associated with the checkpoint.
+	 * 其实checkpoint barrier就是checkpointID+timestamp标记
 	 */
 	public void triggerCheckpointBarrier(final long checkpointID, final long checkpointTimestamp) {
 		AbstractInvokable invokable =  this.invokable;

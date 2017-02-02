@@ -131,7 +131,7 @@ public class OperatorChain<OUT> {
 
 	public void broadcastCheckpointBarrier(long id, long timestamp) throws IOException {
 		try {
-			CheckpointBarrier barrier = new CheckpointBarrier(id, timestamp);
+			CheckpointBarrier barrier = new CheckpointBarrier(id, timestamp);//构造以checkpointID+TimeStamp的CheckpointBarrier
 			for (RecordWriterOutput<?> streamOutput : streamOutputs) {
 				streamOutput.broadcastEvent(barrier);
 			}

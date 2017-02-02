@@ -584,7 +584,7 @@ public abstract class StreamTask<OUT, Operator extends StreamOperator<OUT>>
 	@Override
 	public boolean triggerCheckpoint(long checkpointId, long timestamp) throws Exception {
 		try {
-			return performCheckpoint(checkpointId, timestamp);
+			return performCheckpoint(checkpointId, timestamp);//streamTask执行checkpoint
 		}
 		catch (Exception e) {
 			// propagate exceptions only if the task is still in "running" state

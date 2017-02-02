@@ -762,7 +762,7 @@ public class ExecutionGraph implements Serializable {
 		if (this.scheduler != null && this.scheduler != scheduler) {
 			throw new IllegalArgumentException("Cannot use different schedulers for the same job");
 		}
-
+        //第一次转移状态，从CREATED -> RUNNING,这里的状态改变会让注册到ExecutionGraph的job status listener收到消息，如CheckpointCoordinatorDeActivator这个listener
 		if (transitionState(JobStatus.CREATED, JobStatus.RUNNING)) {
 			this.scheduler = scheduler;
 
@@ -1091,12 +1091,13 @@ public class ExecutionGraph implements Serializable {
 		return transitionState(current, newState, null);
 	}
 
+
 	private boolean transitionState(JobStatus current, JobStatus newState, Throwable error) {
 		if (STATE_UPDATER.compareAndSet(this, current, newState)) {
 			LOG.info("Job {} ({}) switched from state {} to {}.", getJobName(), getJobID(), current, newState, error);
 
 			stateTimestamps[newState.ordinal()] = System.currentTimeMillis();
-			notifyJobStatusChange(newState, error);
+			notifyJobStatusChange(newState, error);//刚开始状态从CREATED -> RUNNING
 			return true;
 		}
 		else {
@@ -1372,7 +1373,7 @@ public class ExecutionGraph implements Serializable {
 							error == null ? null : new SerializedThrowable(error));
 
 			for (ActorGateway listener: jobStatusListenerActors) {
-				listener.tell(message);
+				listener.tell(message);//将新状态，jobID，及发生时刻封装的消息发送给各个job status listener actor，如之前构造注册的CheckpointCoordinatorDeActivator
 			}
 		}
 	}

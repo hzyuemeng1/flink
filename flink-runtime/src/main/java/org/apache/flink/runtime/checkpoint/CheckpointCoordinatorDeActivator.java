@@ -49,9 +49,9 @@ public class CheckpointCoordinatorDeActivator extends FlinkUntypedActor {
 		if (message instanceof ExecutionGraphMessages.JobStatusChanged) {
 			JobStatus status = ((ExecutionGraphMessages.JobStatusChanged) message).newJobStatus();
 			
-			if (status == JobStatus.RUNNING) {
+			if (status == JobStatus.RUNNING) {//收到ExecutionGraph的notifyJobStatusChange方法发送过来，新状态为Running
 				// start the checkpoint scheduler
-				coordinator.startCheckpointScheduler();
+				coordinator.startCheckpointScheduler();//这里会启动checkpoint 调度器
 			} else {
 				// anything else should stop the trigger for now
 				coordinator.stopCheckpointScheduler();
