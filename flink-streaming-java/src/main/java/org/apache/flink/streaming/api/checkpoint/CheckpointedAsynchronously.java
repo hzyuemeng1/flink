@@ -32,7 +32,7 @@ import java.io.Serializable;
  * <p>Asynchronous checkpoints are desirable, because they allow the data streams at the
  * point of the checkpointed function/operator to continue running while the checkpoint
  * is in progress.</p>
- * 
+ * 异步的设计目的就是为了在cp的时候仍然进行数据处理，snapshotState返回的是真实state的副本
  * <p>To be able to support asynchronous snapshots, the state returned by the
  * {@link #snapshotState(long, long)} method is typically a copy or shadow copy
  * of the actual state.</p>

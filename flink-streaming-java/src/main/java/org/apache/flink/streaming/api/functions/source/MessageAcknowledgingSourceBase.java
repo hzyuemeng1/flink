@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * Note that this source can give no guarantees about message order in the case of failures,
  * because messages that were retrieved but not yet acknowledged will be returned later again, after
  * a set of messages that was not retrieved before the failure.
- * <p>
+ * <p>消息完全穿过运行topo和依赖这些记录的所有状态被更新过之后才会被ack
  * Internally, this source gathers the IDs of elements it emits. Per checkpoint, the IDs are stored and
  * acknowledged when the checkpoint is complete. That way, no message is acknowledged unless it is certain
  * that it has been successfully processed throughout the topology and the updates to any state caused by
@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
  * acknowledged. In corner cases, the source may receive certain IDs multiple times, if a
  * failure occurs while acknowledging. To cope with this situation, an additional Set stores all
  * processed IDs. IDs are only removed after they have been acknowledged.
+ * 如果在ack过程中出现失败，source端对于同一个确定的消息ID可能接受多次，acked才会被删除
  * <p>
  * A typical way to use this base in a source function is by implementing a run() method as follows:
  * <pre>{@code
@@ -67,7 +68,7 @@ import org.slf4j.LoggerFactory;
  *     while (running) {
  *         Message msg = queue.retrieve();
  *         synchronized (ctx.getCheckpointLock()) {
- *             ctx.collect(msg.getMessageData());
+ *             ctx.collect(msg.getMessageData());//消息发到下游以后就放入到ID list中去等待确认，最后sink算发送ack之后会删除该消息ID及消息
  *             addId(msg.getMessageId());
  *         }
  *     }

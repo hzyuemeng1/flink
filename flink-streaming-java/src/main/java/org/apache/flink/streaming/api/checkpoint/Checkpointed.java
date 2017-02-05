@@ -33,7 +33,7 @@ import java.io.Serializable;
  * continue to work and mutate the state, even while the state snapshot is being accessed,
  * can implement the {@link org.apache.flink.streaming.api.checkpoint.CheckpointedAsynchronously}
  * interface.</p>
- * 
+ * function被标记为同步的cp，写state的时候，function不会被调用，返回指向function当前状态的指针给JB
  * @param <T> The type of the operator state.
  */
 @PublicEvolving
@@ -59,7 +59,7 @@ public interface Checkpointed<T extends Serializable> {
 	/**
 	 * Restores the state of the function or operator to that of a previous checkpoint.
 	 * This method is invoked when a function is executed as part of a recovery run.
-	 *
+	 *从先前的cp中恢复function或者operator的状态，当function作为恢复模式执行时候该方法被invoke，该方法的调用会早于open方法
 	 * Note that restoreState() is called before open().
 	 *
 	 * @param state The state to be restored. 
